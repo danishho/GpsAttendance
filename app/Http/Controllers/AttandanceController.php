@@ -10,6 +10,7 @@ use App\Models\GpsData;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use PhpMqtt\Client\Facades\MQTT;
 
 class AttandanceController extends Controller
 {
@@ -20,6 +21,13 @@ class AttandanceController extends Controller
             ['user_id' => 1, 'status' => 'unregistered'] // Attributes to set if not found
         );
 
+//        // Check if the device is unregistered
+//        if ($device->status == 'unregistered') {
+//            return response()->json([
+//                'message' => 'Device is unregistered and cannot perform attendance operations'
+//            ], 403); // HTTP 403 Forbidden
+//        }
+//
 
         $receivedLat = $data['lat'];
         $receivedLon = $data['lng'];
@@ -41,36 +49,69 @@ class AttandanceController extends Controller
         $radius = $AttendanceSetting['radius'];
 
         // Calculate the distance from the target location
-        $distance = $this->haversine($receivedLat, $receivedLon, $check_in_latitude, $check_in_longitude);
+        $distance_checkin = $this->haversine($receivedLat, $receivedLon, $check_in_latitude, $check_in_longitude);
+        $distance_checkout = $this->haversine($receivedLat, $receivedLon, $check_out_latitude, $check_out_longitude);
 
+        $attendance = $this->getLastAttendance($device); // Function to get the last attendance record for the device
 
+//        // Check if the current time is past the check-out time and the user hasn't checked out
+//        $current_time = Carbon::now('Asia/Kuala_Lumpur')->toTimeString();
+//        if ($attendance && !$attendance->check_out && $current_time > $check_out_time) {
+//            $this->updateCheckOut($attendance, $check_out_time);
+//        }
 
+        if ($distance_checkin <= $radius+5) {
 
-        if ($distance <= $radius+5) {
-            $attendance = $this->getLastAttendance($device); // Function to get the last attendance record for the device
-//            create a condition for !attandence and not equal to unreqistered
-            if(!$attendance || $attendance->Date !== $receivedDate){
-                return $this->CreateAttandance($device, $receivedDate, $receivedTime,$receivedDateTime);
+//            create a condition for !attandence and not equal to unreqistere
+            if(!$attendance || $attendance->date !== $receivedDate){
+
+                if ($receivedTime >= $check_in_time) {
+                    // Send MQTT message to turn on the buzzer for check-in
+                    MQTT::publish('buzzer', 'on');
+                    return $this->CreateAttandance($device, $receivedDate, $receivedTime, $receivedDateTime);
+                }
             }
+
+
+
             date_default_timezone_set('Asia/Kuala_Lumpur');
-            // If already checked in, calculate time difference for check-out
-            $checkInTime = strtotime($attendance['Check_in']);
-            $currentTime = time();
+            $checkInTime = strtotime($attendance['check_in']);
+            $currentTime = strtotime($receivedTime);
             $minimumHours = $min_hour * 3600;
 
-            if (($currentTime - $checkInTime) >= $minimumHours) {
-                $this->updateCheckOut($attendance);
-            } else {
-                return response()->json(['message' => "not enter minumun hour"]);
+            if ($attendance->check_out && $currentTime < $check_out_time ) {
+                // If there's a previous check-out, calculate the interval between the last check-out and the current check-in
+                $checkOutTime = strtotime($attendance['check_out']);
+                $interval = $currentTime - $checkOutTime;
+                $attendance->update([
+                    'interval_time' => $attendance->interval_time + $interval,
+                    'check_out' => null
+                ]);
+                return response()->json(['message' => 'Checked in again after interval', 'interval' => $interval]);
+            }
+//            else {
+//                if ($receivedTime >= $check_out_time) {
+//
+//                    $this->updateCheckOut($attendance,$receivedTime);
+//                } else {
+//                    return response()->json(['message' => "not enter minumun hour"]);
+//                }
+//            }
+        // Save attendance logic here
+            return response()->json(['message' => "inside the radius, distance:{$distance_checkin}"]);
+        }elseif ($distance_checkout <= $radius+5) {
+            if ($attendance && $attendance->date == $receivedDate){
+                // Send MQTT message to turn on the buzzer for check-in
+                MQTT::publish('buzzer', 'on');
+               return $this->updateCheckOut($attendance, $receivedTime);
+            }else {
+                return response()->json(['message' => "no attandance recorded"]);
             }
 
-
-
-            // Save attendance logic here
-            return response()->json(['message' => "inside the radius, distance:{$distance}"]);
         } else {
+
             return response()->json([
-                'message' => "OUTSIDE RADIUS, distance:{$distance}"
+                'message' => "OUTSIDE RADIUS, distance:{$distance_checkin}"
             ]);
 
         }
@@ -117,24 +158,35 @@ class AttandanceController extends Controller
 
     private function CreateAttandance($device,$receivedDate, $receivedTime, $receivedDateTime)
     {
+        try{
+            Attandance::create([
+                'device_id' => $device->id,
+                'check_in' => $receivedTime,
+                'date' => $receivedDate,
+                'interval_time' => 0,
+                'status' => 'present', // Correct assignment
 
-        Attandance::create([
-            'device_id' => $device->id,
-            'check_in' => $receivedTime,
-            'Date' => $receivedDate,
-            'status' => 'present', // Adjust the status as needed
-        ]);
+            ]);
 
-        return response()->json([
-            'message' => "Attendance record created, {$receivedDateTime}",
-        ]);
+            // If successful, return a success response
+            return response()->json([
+                'message' => "Attendance record created successfully for {$receivedDateTime}",
+            ]);
+
+        }catch (\Exception $e){
+            return response()->json([
+                'error' => 'Failed to create attendance record',
+                'details' => $e->getMessage(),
+            ], 500); // HTTP 500 Internal Server Error
+        }
+
+
     }
 
-    private function updateCheckOut($attendance)
+    private function updateCheckOut($attendance, $receivedTime)
     {
-        $checkOutTime = date('H:i:s');
         $attendance->update([
-          'check_out' => $checkOutTime,
+          'check_out' => $receivedTime,
           'status' => 'completed',
         ]);
 

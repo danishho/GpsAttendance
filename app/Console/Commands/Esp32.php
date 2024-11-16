@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Http\Controllers\AttandanceController;
+use App\Models\Attandance;
+use App\Models\AttandanceSetting;
 use App\Models\Device;
 use Illuminate\Console\Command;
 use PhpMqtt\Client\Facades\MQTT;
@@ -34,6 +36,21 @@ class Esp32 extends Command
                 $this->error("Failed to decode JSON message.");
             }
         });
+
+        $AttendanceSetting = AttandanceSetting::first();
+        $check_out_time = $AttendanceSetting['check_out_time'];
+
+        $attendances=Attandance::all();
+        $currentTime = time();
+
+
+        foreach ($attendances as $attendance) {
+            // Update check-out if the current time has passed the check-out time and check-out is still null
+            if ($currentTime >= $check_out_time && $attendance->check_out == null) {
+                $attendance->update(['check_out' => $check_out_time]); // Format as needed
+                $this->info("Check-out time updated for attendance ID: {$attendance->id}");
+            }
+        }
 
         $mqtt->loop(true);
 

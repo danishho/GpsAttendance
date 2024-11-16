@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('attandances', function (Blueprint $table) {
             $table->id();
-            $table->time('Check_in')->nullable();
-            $table->time('Check_out')->nullable();
-            $table->date('Date')->nullable();
+            $table->time('check_in')->nullable();
+            $table->time('check_out')->nullable();
+            $table->integer('interval_time')->default(0);
+            $table->date('date')->nullable();
             $table->string('status')->nullable();
             $table->float('total_hours')->nullable();
             $table->foreignId('device_id')->constrained('devices');

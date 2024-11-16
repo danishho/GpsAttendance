@@ -21,11 +21,11 @@ class AttandanceSettingFactory extends Factory
             'check_in_longitude' => 103.259820, // Fixed for testing
             'check_out_latitude' => 3.857039,
             'check_out_longitude' => 103.259900,
-            'radius' => 10+5,
+            'radius' => 10,
             'min_hour' => 0.05,
             'max_hour' => $this->faker->numberBetween(0, 23),
-            'check_in_time' => $this->faker->time(),
-            'check_out_time' => $this->faker->time(),
+            'check_in_time' => '08:00:00', // Corrected to a string
+            'check_out_time' => '19:00:00', // Corrected to a string
         ];
     }
 }
