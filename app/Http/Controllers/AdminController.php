@@ -278,11 +278,23 @@ class AdminController extends Controller
                   ->whereYear('date', '=', date('Y', strtotime($month)));
         }
 
-        // Apply specific date filter if provided
-        if ($date) {
-            $query->whereDate('date', '=', $date);
-        }
-
+         // Apply status filter if provided
+        if ($status = $request->get('status')) {
+            switch($status) {
+                case 'on_time':
+                    $query->where('status_checkin', 'On Time');
+                    break;
+                case 'late':
+                    $query->where('status_checkin', 'Late');
+                    break;
+                case 'completed':
+                    $query->where('status_checkout', 'Completed');
+                    break;
+                case 'warning':
+                    $query->where('status_checkout', 'Warning: Less than 8 hours');
+                    break;
+            }
+        }    
         // Paginate the results
         $attendances = $query->paginate(10);
 
@@ -290,6 +302,41 @@ class AdminController extends Controller
         return view('admin.attendance-logs', compact('attendances'));
     }
 
+    public function userManagement()
+    {
+        $users = User::with('devices')
+            ->orderBy('name')
+            ->paginate(10);
 
+        return view('admin.user-management', compact('users'));
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'position' => 'required|string|max:255',
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->position = $validated['position'];
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return back()->with('success', 'User updated successfully');
+    }
+
+    public function deleteUser(User $user)
+    {
+        $user->delete();
+        return back()->with('success', 'User deleted successfully');
+    }
 
 }

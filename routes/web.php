@@ -46,6 +46,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::post('/admin/attendance-settings/reset', [AttendanceSettingsController::class, 'reset'])->name('attendance.reset');
     Route::get('/register-user', [AdminController::class, 'showRegisterForm'])->name('users.create');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
+    Route::get('/users-management', [AdminController::class, 'userManagement'])->name('users.management');
+    Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
 });
 
 Route::get('/admin/dashboard/data', [AdminController::class, 'dashboardData'])

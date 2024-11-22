@@ -78,10 +78,18 @@
             </li>
             <li>
                 <a href="{{ route('admin.users.create') }}" class="sidebar-link {{ request()->routeIs('admin.users.create') ? 'active' : '' }}">
-                    <svg class="w-5 h-5 text-white-500 transition duration-75 group-hover:text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.333 0a5.333 5.333 0 1 0 0 10.666A5.333 5.333 0 0 0 9.333 0Zm0 2a3.333 3.333 0 1 1 0 6.666 3.333 3.333 0 0 1 0-6.666Zm-8 12c0-1.333 2.667-2 8-2s8 .667 8 2v2h-16v-2Zm16 0c0-2.667-5.333-4-8-4s-8 1.333-8 4v4h16v-4Z"/>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                     </svg>
                     <span class="ml-3">Register User</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('admin.users.management') }}" class="sidebar-link {{ request()->routeIs('admin.users.index') ? 'active' : '' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span class="ml-3">User Management</span>
                 </a>
             </li>
         </ul>

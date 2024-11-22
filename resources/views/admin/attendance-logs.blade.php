@@ -37,13 +37,18 @@
                                        value="{{ request('month') }}"
                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                             </div>
+                              <!-- Add Status Filter -->
                             <div class="flex-1 min-w-[200px]">
-                                <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Filter by Specific Date</label>
-                                <input type="date"
-                                       id="date"
-                                       name="date"
-                                       value="{{ request('date') }}"
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                                <select id="status" 
+                                        name="status" 
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    <option value="">All Statuses</option>
+                                    <option value="on_time" {{ request('status') === 'on_time' ? 'selected' : '' }}>On Time</option>
+                                    <option value="late" {{ request('status') === 'late' ? 'selected' : '' }}>Late</option>
+                                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                                    <option value="warning" {{ request('status') === 'warning' ? 'selected' : '' }}>Warning: Less than 8 hours</option>
+                                </select>
                             </div>
                             <div class="flex gap-2">
                                 <button type="submit"

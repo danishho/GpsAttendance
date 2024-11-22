@@ -33,7 +33,6 @@
                         <div class="relative bg-white/90 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-200">
                             <div class="p-8 border-b border-gray-200">
                                 <h2 class="text-3xl font-bold text-gray-900">Register New User</h2>
-                                <p class="mt-2 text-sm text-gray-600">Create a new user account for the system</p>
                             </div>
 
                             @if ($errors->any())

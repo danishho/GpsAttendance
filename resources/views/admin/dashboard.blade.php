@@ -3,7 +3,6 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="30">
     <title>Admin Dashboard - GeoLokasi</title>
     @vite('resources/css/app.css')
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -63,8 +62,8 @@
                                     <li class="py-4">
                                         <div class="flex items-center space-x-4">
                                             <div class="flex-shrink-0">
-                                                <img class="h-8 w-8 rounded-full" 
-                                                    src="{{ $record->device->user->profile_photo_url }}" 
+                                                <img class="h-8 w-8 rounded-full"
+                                                    src="{{ $record->device->user->profile_photo_url }}"
                                                     alt="{{ $record->device->user->name }}">
                                             </div>
                                             <div class="flex-1 min-w-0">
