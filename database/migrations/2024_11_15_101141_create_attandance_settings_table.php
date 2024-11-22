@@ -17,9 +17,7 @@ return new class extends Migration
             $table->decimal('check_in_longitude', 9,6)->nullable();
             $table->decimal('check_out_latitude', 8,6)->nullable();
             $table->decimal('check_out_longitude', 9,6)->nullable();
-            $table->decimal('radius', 5,2)->nullable();
-            $table->decimal('min_hour', 5, 2)->nullable();
-            $table->decimal('max_hour', 5, 2)->nullable();
+            $table->decimal('radius', 5,2)->default(50);
             $table->time('check_in_time')->nullable();
             $table->time('check_out_time')->nullable();
             $table->timestamps();

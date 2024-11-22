@@ -18,9 +18,7 @@ class AttandanceSettingSeeder extends Seeder
             'check_in_longitude' => 103.259820,
             'check_out_latitude' => 3.857039,
             'check_out_longitude' => 103.259900,
-            'radius' => 10,
-            'min_hour' => 0.05,
-            'max_hour' => 0.08,
+            'radius' => 50,
         ]);
     }
 }

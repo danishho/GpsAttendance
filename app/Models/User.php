@@ -29,6 +29,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'position',
+
     ];
 
     /**
@@ -63,5 +65,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function isAdmin()
+    {
+        return $this->is_admin;
+    }
+
+    // Define the relationship with devices
+    public function devices()
+    {
+        return $this->hasMany(Device::class);
     }
 }

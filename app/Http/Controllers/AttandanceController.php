@@ -6,10 +6,7 @@ namespace App\Http\Controllers;
 use App\Models\Attandance;
 use App\Models\AttandanceSetting;
 use App\Models\Device;
-use App\Models\GpsData;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use PhpMqtt\Client\Facades\MQTT;
 
 class AttandanceController extends Controller
@@ -18,16 +15,16 @@ class AttandanceController extends Controller
 // Find or create the device
         $device = Device::firstOrCreate(
             ['device_name' => $data['device_name']], // Search attributes
-            ['user_id' => 1, 'status' => 'unregistered'] // Attributes to set if not found
+            ['status' => 'unregistered'] // Attributes to set if not found
         );
 
-//        // Check if the device is unregistered
-//        if ($device->status == 'unregistered') {
-//            return response()->json([
-//                'message' => 'Device is unregistered and cannot perform attendance operations'
-//            ], 403); // HTTP 403 Forbidden
-//        }
-//
+        // Check if the device is unregistered
+        if ($device->status == 'unregistered') {
+            return response()->json([
+                'message' => 'Device is unregistered and cannot perform attendance operations'
+            ], 403); // HTTP 403 Forbidden
+        }
+
 
         $receivedLat = $data['lat'];
         $receivedLon = $data['lng'];
@@ -43,7 +40,6 @@ class AttandanceController extends Controller
         $check_out_latitude = $AttendanceSetting['check_out_latitude'];
         $check_out_longitude = $AttendanceSetting['check_out_longitude'];
         $min_hour = $AttendanceSetting['min_hour'];
-        $max_hour = $AttendanceSetting['max_hour'];
         $check_in_time = $AttendanceSetting['check_in_time'];
         $check_out_time = $AttendanceSetting['check_out_time'];
         $radius = $AttendanceSetting['radius'];
@@ -54,21 +50,28 @@ class AttandanceController extends Controller
 
         $attendance = $this->getLastAttendance($device); // Function to get the last attendance record for the device
 
-//        // Check if the current time is past the check-out time and the user hasn't checked out
-//        $current_time = Carbon::now('Asia/Kuala_Lumpur')->toTimeString();
-//        if ($attendance && !$attendance->check_out && $current_time > $check_out_time) {
-//            $this->updateCheckOut($attendance, $check_out_time);
-//        }
+        // Check if the current time is past the check-out time and the user hasn't checked out
+        $current_time = Carbon::now('Asia/Kuala_Lumpur')->toTimeString();
+        if ($attendance && !$attendance->check_out && $current_time > $check_out_time) {
+            $this->updateCheckOut($attendance, $check_out_time);
+        }
 
-        if ($distance_checkin <= $radius+5) {
+        if ($distance_checkin <= $radius+10) {
 
-//            create a condition for !attandence and not equal to unreqistere
-            if(!$attendance || $attendance->date !== $receivedDate){
+//            create a condition for !attandence and not equal to unreqistered
+            if(!$attendance || $attendance->date !== $receivedDate && $device->status == 'unregistered'){
 
                 if ($receivedTime >= $check_in_time) {
+                    // Calculate the difference in minutes between the scheduled check-in time and the actual check-in time
+                    $checkInTimeScheduled = Carbon::parse($check_in_time, 'Asia/Kuala_Lumpur');
+                    $diffInMinutes = $checkInTimeScheduled->diffInMinutes($receivedDateTime);
+
+                    // Determine the status and points_earned
+                    $statusAndPoints = $this->determineStatusAndPoints($diffInMinutes);
+
                     // Send MQTT message to turn on the buzzer for check-in
                     MQTT::publish('buzzer', 'on');
-                    return $this->CreateAttandance($device, $receivedDate, $receivedTime, $receivedDateTime);
+                    return $this->CreateAttandance($device, $receivedDate, $receivedTime, $receivedDateTime,$statusAndPoints);
                 }
             }
 
@@ -76,17 +79,19 @@ class AttandanceController extends Controller
 
             date_default_timezone_set('Asia/Kuala_Lumpur');
             $checkInTime = strtotime($attendance['check_in']);
-            $currentTime = strtotime($receivedTime);
             $minimumHours = $min_hour * 3600;
 
-            if ($attendance->check_out && $currentTime < $check_out_time ) {
+            if ($attendance->check_out && $receivedTime < $check_out_time) {
                 // If there's a previous check-out, calculate the interval between the last check-out and the current check-in
                 $checkOutTime = strtotime($attendance['check_out']);
+                $currentTime = strtotime($receivedTime);
                 $interval = $currentTime - $checkOutTime;
                 $attendance->update([
                     'interval_time' => $attendance->interval_time + $interval,
                     'check_out' => null
                 ]);
+                // Send MQTT message to turn on the buzzer for check-in
+                MQTT::publish('buzzer', 'on');
                 return response()->json(['message' => 'Checked in again after interval', 'interval' => $interval]);
             }
 //            else {
@@ -99,8 +104,8 @@ class AttandanceController extends Controller
 //            }
         // Save attendance logic here
             return response()->json(['message' => "inside the radius, distance:{$distance_checkin}"]);
-        }elseif ($distance_checkout <= $radius+5) {
-            if ($attendance && $attendance->date == $receivedDate){
+        }elseif ($distance_checkout <= $radius+10 ) {
+            if ($attendance && $attendance->date == $receivedDate && $attendance->check_out == null) {
                 // Send MQTT message to turn on the buzzer for check-in
                 MQTT::publish('buzzer', 'on');
                return $this->updateCheckOut($attendance, $receivedTime);
@@ -156,7 +161,7 @@ class AttandanceController extends Controller
         return $lastAttendance;
     }
 
-    private function CreateAttandance($device,$receivedDate, $receivedTime, $receivedDateTime)
+    private function CreateAttandance($device,$receivedDate, $receivedTime, $receivedDateTime, $statusAndPoints)
     {
         try{
             Attandance::create([
@@ -164,7 +169,8 @@ class AttandanceController extends Controller
                 'check_in' => $receivedTime,
                 'date' => $receivedDate,
                 'interval_time' => 0,
-                'status' => 'present', // Correct assignment
+                'status_checkin' => $statusAndPoints['status'], // Correct assignment
+                'points_earned' => $statusAndPoints['points_earned'], // Add points_earned
 
             ]);
 
@@ -185,15 +191,49 @@ class AttandanceController extends Controller
 
     private function updateCheckOut($attendance, $receivedTime)
     {
+        // Calculate the total hours based on check_in and receivedTime
+        $checkInTime = $attendance->check_in;
+        $checkOutTime = $receivedTime;
+
+        // Convert times to Carbon instances for easy calculation
+        $checkIn = \Carbon\Carbon::parse($checkInTime);
+        $checkOut = \Carbon\Carbon::parse($checkOutTime);
+
+        // Calculate the difference in hours
+//        $totalHours = $checkIn->diffInHours($checkOut);
+//        $totalHours = $totalHours- $attendance->interval_time;
+        $totalHours = max(0, $checkIn->diffInHours($checkOut) - $attendance->interval_time);
+
+
         $attendance->update([
-          'check_out' => $receivedTime,
-          'status' => 'completed',
+            'check_out' => $receivedTime,
+            'total_hours' => $totalHours,
+            'status_checkout' => $totalHours < 8 ? 'Warning: Less than 8 hours' : 'Completed'
         ]);
 
         return response()->json([
             'message' => 'updated checkout',
         ]);
 
+    }
+
+    private function determineStatusAndPoints($diffInMinutes)
+    {
+        if ($diffInMinutes <= 90) {
+            return ['status' => 'On Time', 'points_earned' => 10];
+        } else {
+            return ['status' => 'Late', 'points_earned' => 0];
+        }
+
+        // if ($diffInMinutes <= 5) {
+        //     return ['status' => 'On Time', 'points_earned' => 10];
+        // } elseif ($diffInMinutes <= 15) {
+        //     return ['status' => 'Slightly Late', 'points_earned' => 5];
+        // } elseif ($diffInMinutes <= 30) {
+        //     return ['status' => 'Late', 'points_earned' => 2];
+        // } else {
+        //     return ['status' => 'Very Late', 'points_earned' => 0];
+        // }
     }
 
 

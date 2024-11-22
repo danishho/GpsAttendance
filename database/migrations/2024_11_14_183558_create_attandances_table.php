@@ -17,9 +17,11 @@ return new class extends Migration
             $table->time('check_out')->nullable();
             $table->integer('interval_time')->default(0);
             $table->date('date')->nullable();
-            $table->string('status')->nullable();
-            $table->float('total_hours')->nullable();
-            $table->foreignId('device_id')->constrained('devices');
+            $table->string('status_checkin')->nullable();
+            $table->string('status_checkout')->nullable();
+            $table->decimal('total_hours', 5,2)->nullable();
+            $table->integer('points_earned')->nullable()->default(0);
+            $table->foreignId('device_id')->constrained('devices')->cascadeOnDelete();
             $table->timestamps();
         });
     }

@@ -2,6 +2,265 @@
 @tailwind components;
 @tailwind utilities;
 
-[x-cloak] {
-    display: none;
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
 }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(0.89);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-blob {
+    animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
+}
+
+.animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-slide-up {
+    animation: slideUp 1s ease-out forwards;
+    animation-delay: 0.3s;
+    opacity: 0;
+}
+
+.animate-bounce-in {
+    animation: bounceIn 1s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+}
+
+.feature-card {
+    opacity: 0;
+    animation: slideUp 0.8s ease-out forwards;
+}
+
+.feature-card:nth-child(1) { animation-delay: 0.2s; }
+.feature-card:nth-child(2) { animation-delay: 0.4s; }
+.feature-card:nth-child(3) { animation-delay: 0.6s; }
+
+[x-cloak] {
+    display: none !important;
+}
+
+.sidebar-nav-link {
+    @apply flex items-center px-4 py-3 text-gray-100 hover:bg-indigo-800 transition-colors duration-200;
+}
+
+.sidebar-icon {
+    @apply h-5 w-5 mr-3;
+}
+
+.dashboard-stat {
+    opacity: 0;
+    animation: slideUp 0.8s ease-out forwards;
+}
+
+.dashboard-stat:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-stat:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-stat:nth-child(3) { animation-delay: 0.3s; }
+.dashboard-stat:nth-child(4) { animation-delay: 0.4s; }
+
+.table-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+    animation-delay: 0.5s;
+    opacity: 0;
+}
+
+.sidebar-link {
+    @apply flex items-center p-2 text-white rounded-lg transition-all duration-300;
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-link::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-50%);
+    transition: width 0.3s ease;
+    z-index: 0;
+}
+
+.sidebar-link:hover::before {
+    width: 100%;
+}
+
+.sidebar-link.active {
+    @apply bg-white/10 font-medium;
+    animation: pulseHighlight 2s infinite;
+}
+
+.sidebar-link svg {
+    @apply transition-transform duration-300;
+    position: relative;
+    z-index: 1;
+}
+
+.sidebar-link:hover svg {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.sidebar-link span {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes pulseHighlight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+.logout-button {
+    @apply flex items-center w-full p-2 text-white rounded-lg transition-all duration-300;
+    position: relative;
+    overflow: hidden;
+    background: rgba(239, 68, 68, 0.8);
+}
+
+.logout-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-50%);
+    transition: width 0.3s ease;
+    z-index: 0;
+}
+
+.logout-button:hover {
+    background: rgb(239, 68, 68);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.logout-button:hover::before {
+    width: 100%;
+}
+
+.logout-button:active {
+    transform: translateY(1px);
+}
+
+.logout-button svg {
+    @apply transition-transform duration-300;
+    position: relative;
+    z-index: 1;
+}
+
+.logout-button:hover svg {
+    transform: scale(1.1) rotate(-5deg);
+    animation: shakeIcon 0.8s ease-in-out;
+}
+
+.logout-button span {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes shakeIcon {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-8deg); }
+    40% { transform: rotate(6deg); }
+    60% { transform: rotate(-4deg); }
+    80% { transform: rotate(2deg); }
+}
+
+/* Admin Dashboard Animations */
+.admin-card {
+    @apply transform transition-all duration-300;
+}
+
+.admin-card:hover {
+    @apply -translate-y-1 shadow-lg;
+}
+
+.admin-stat-card {
+    animation: fadeSlideUp 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Add animation delays for cards */
+.admin-stat-card:nth-child(1) { animation-delay: 0.1s; }
+.admin-stat-card:nth-child(2) { animation-delay: 0.2s; }
+.admin-stat-card:nth-child(3) { animation-delay: 0.3s; }
+.admin-stat-card:nth-child(4) { animation-delay: 0.4s; }
