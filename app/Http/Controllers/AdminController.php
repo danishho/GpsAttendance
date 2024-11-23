@@ -16,25 +16,38 @@ class AdminController extends Controller
 {
     public function index()
     {
-
-        if (!auth()->user()->is_admin) {
-            return redirect()->route('dashboard');
-        }
-
-        $totalUsers = User::count();
-        $totalAttendance = Attandance::whereHas('device.user')->count();
-        $averagePoints = Attandance::whereHas('device.user')->avg('points_earned');
-        $recentUsers = User::latest()->take(5)->get();
-        $recentAttendance = Attandance::with(['device.user'])
-            ->whereHas('device.user')
-            ->latest()
-            ->take(10)
+        $today = now()->toDateString();
+        
+        // Get total users (excluding admins)
+        $totalUsers = User::where('is_admin', false)->count();
+        
+        // Get today's attendance records
+        $todayAttendance = Attandance::whereDate('date', $today)
+            ->whereHas('device.user', function($query) {
+                $query->where('is_admin', false);
+            })
             ->get();
-
-        $devices = Device::with('user')->where('status', 'registered')->get();
+        
+        // Calculate on-time and late counts
+        $onTimeCount = $todayAttendance->where('status_checkin', 'On Time')->count();
+        $lateCount = $todayAttendance->where('status_checkin', 'Late')->count();
+        
+        // Calculate on-time percentage
+        $totalCheckins = $onTimeCount + $lateCount;
+        $onTimePercentage = $totalCheckins > 0 ? round(($onTimeCount / $totalCheckins) * 100) : 0;
+        
+        // Get other existing data
+        $totalAttendance = Attandance::count();
+        $averagePoints = Attandance::avg('points_earned');
+        $recentUsers = User::where('is_admin', false)->latest()->take(5)->get();
+        $recentAttendance = Attandance::with('device.user')->latest()->take(5)->get();
+        $devices = Device::count();
 
         return view('admin.dashboard', compact(
             'totalUsers',
+            'onTimeCount',
+            'lateCount',
+            'onTimePercentage',
             'totalAttendance',
             'averagePoints',
             'recentUsers',
